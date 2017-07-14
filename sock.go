@@ -8,7 +8,7 @@ import (
 	"net"
 )
 
-var SockPort = flag.Int("sockport", 7897, "port used for streaming temperature data")
+var SockPort = flag.Int("sockport", 7897, "port used for streaming temperature temps")
 
 func StartSockServer() chan HistorySample {
 	stream := make(chan HistorySample, 1)

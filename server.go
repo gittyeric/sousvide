@@ -55,7 +55,7 @@ func (s *SousVide) StartServer() {
 
 		b, err := json.Marshal(s.History[len(s.History)-1])
 		if err != nil {
-			log.Panicf("could not marshal temp data to json: %v", err)
+			log.Panicf("could not marshal temp temps to json: %v", err)
 		}
 		resp.Write(b)
 	})
@@ -110,6 +110,7 @@ func (s *SousVide) StartServer() {
 	http.HandleFunc("/timer", AddTimerHandler)
 	http.HandleFunc("/timers", GetTimersHandler)
 	http.HandleFunc("/delete_timer", DeleteTimerHandler)
+	http.HandleFunc("/history", GetHistory)
 	http.Handle("/", http.FileServer(http.Dir("static/")))
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
 }

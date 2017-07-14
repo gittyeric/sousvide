@@ -10,6 +10,7 @@ import (
 	"os"
 	"sync"
 	"time"
+	"github.com/antigloss/go/logger"
 )
 
 const (
@@ -43,6 +44,7 @@ type SousVide struct {
 	lastIOutput float64
 	lastDOutput float64
 	lastControl float64
+	JobName		string
 }
 
 type HistorySample struct {
@@ -78,6 +80,12 @@ type Celsius float64
 
 func New() *SousVide {
 	s := new(SousVide)
+	s.JobName = ""
+	logger.Init("/var/log/sousvide/therm", // specify the directory to save the logfiles
+		365, // maximum logfiles allowed under the specified log directory
+		2, // number of logfiles to delete when number of logfiles exceeds the configured limit
+		5, // maximum size of a logfile in MB
+		false) // whether logs with Trace level are written down
 	s.History = make([]HistorySample, 0, HistoryLength)
 	return s
 }
@@ -111,6 +119,8 @@ func (s *SousVide) checkpoint() {
 		s.History = append(s.History, snapshot)
 	}
 	Stream <- snapshot
+
+	LogHistory(s)
 
 	s.AccError = 0
 	s.MaxError = 0
@@ -198,7 +208,7 @@ func main() {
 	}
 
 	Stream = StartSockServer()
-	go StartTimerUpdateLoop()
+	go StartTimerUpdateLoop(s)
 	go s.StartControlLoop()
 	go StartBroadcast()
 	s.StartServer()

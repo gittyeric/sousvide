@@ -8,6 +8,12 @@
          url('webfonts/norwester.svg#font') format('svg');
 }
 
+.clearfix{
+    clear:both;
+}
+.clearfix:before, .clearfix:after { content: ""; display: table; }
+.clearfix:after { clear: both; }
+
 .bg-primary { background: #CCC; }
 .bg-secondary { background: #FFF; }
 .fg-primary { color: #CCC; }
@@ -17,6 +23,12 @@ body { font-family: 'Source Sans Pro', sans-serif;
     font-size: 14pt;
 	margin: 0;
 	overflow: hidden;
+}
+
+svg{
+    position: absolute;
+    top: 150px;
+    z-index: -2;
 }
 
 #mask {
@@ -50,9 +62,9 @@ body { font-family: 'Source Sans Pro', sans-serif;
 }
 
 #floater {
-	position: fixed;
-	left: 32pt;
-	top: 32pt;
+	position: relative;
+	margin-left: 32pt;
+	margin-top: 32pt;
 	font-family: Norwester, monospace;
 	width: 500pt;
 	z-index: 5;
@@ -61,7 +73,6 @@ body { font-family: 'Source Sans Pro', sans-serif;
 /************ INFO PANEL *************/
 
 #display {
-	background: #FFF;
 	padding: 32pt;
 	text-align: right;
 }
@@ -98,7 +109,6 @@ body { font-family: 'Source Sans Pro', sans-serif;
 
 #buttonbar {
 	width: 500pt;
-	float: left;
 }
 
 #buttonbar a {
@@ -201,7 +211,7 @@ h1 a {
 /**************** EDITOR ******************/
 
 #editor_container {
-	position: fixed;
+	position: absolute;
 	left: 532pt;
 	top: 32pt;
 	float: left;
@@ -213,6 +223,7 @@ h1 a {
 	float: left;
 	margin-left: -300px;
 	z-index: 0;
+        opacity: 0;
 }
 
 #editor_expand {
@@ -253,4 +264,67 @@ input[type=text] {
 	border: none;
 	border-bottom: 1px solid #000;
 	padding: 2pt;
+}
+
+#jobs{
+    margin-top: 40px;
+    padding: 10px;
+    overflow: hidden;
+    position: relative;
+    margin-left: 32pt;
+    max-width: 310px;
+}
+
+.invis{
+    opacity: 0.8;
+    background: #fff;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    top: 0;
+    left: 0;
+}
+
+#jobs h2{
+    margin: 10px 0;
+}
+
+#jobs h3{
+    margin: 0;
+    text-transform: uppercase;
+}
+
+#jobs button{
+    margin-right: 10px;
+    margin-top: 15px;
+    background: #ff0049;
+    color: #eee;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#jobs button.cancel{
+    background: #ccc;
+    color: #333;
+}
+
+#jobs span{
+    font-weight: bold;
+}
+
+#new_job,#manage_job,#preheating,#cooking,#cooked{
+    height: 0;
+}
+
+#jobs div{
+    overflow: hidden;
+}
+
+#manage_job p{
+    display: block;
+    margin-bottom: 10px;
 }

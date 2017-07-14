@@ -102,7 +102,7 @@ function formAjax(formElem, path, blinkUntil) {
 			type: 'post',
 			dataType: 'text',
 			success: function(resp) {
-				console.log("got response to " + path + " with data " + data + ": " + resp);
+				console.log("got response to " + path + " with temps " + data + ": " + resp);
 			},
 			error: function(xhr, stat, err) {
 				console.log("error " + err + " on backend: " + xhr.responseText);
@@ -135,4 +135,5 @@ $(document).ready(function() {
 	getTimerData();
 
 	initEditor();
-})
+        initJobs();
+});

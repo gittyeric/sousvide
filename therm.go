@@ -24,6 +24,7 @@ func findSerial() (string, error) {
 	}
 	for _, d := range devices {
 		if !strings.Contains(d, "w1 bus master") {
+                        log.Printf("Found serial: %s", d)
 			return d, nil
 		}
 	}
@@ -104,7 +105,7 @@ func (s *SousVide) MeasureTemp() error {
 		return err
 	}
 
-	s.Temp = Celsius(floatVal / 1000)
+	s.Temp = Celsius( (floatVal / 1000) * 1.8 + 32 ) //Global to-F conversion
 	log.Printf("read temperature %f", s.Temp)
 	return nil
 }

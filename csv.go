@@ -32,7 +32,7 @@ func (s *SousVide) DumpJson(w http.ResponseWriter, _ *http.Request) {
 
 	b, err := json.Marshal(s.History)
 	if err != nil {
-		log.Panicf("could not marshal historical data to json: %v", err)
+		log.Panicf("could not marshal historical temps to json: %v", err)
 	}
 	w.Write(b)
 }

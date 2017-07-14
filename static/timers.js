@@ -19,10 +19,10 @@ function getTimerData() {
 		url: '/timers',
 		type: 'json',
 		success: function(resp) {
-			displayTimers(resp)
+			//displayTimers(resp)
 		}
 	})
-	setTimeout(getTimerData, 1000)
+	setTimeout(getTimerData, 5000);
 }
 
 function durationFormat(nano) {

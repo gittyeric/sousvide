@@ -1,136 +1,178 @@
 <!doctype html>
 <html>
-	<head>
-		<title>sousvide</title>
+    <head>
+        <title>sousvide</title>
         <link rel="stylesheet" media="screen and (min-device-width: 800px)" href="screen.css" />
-		<link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
+        <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
         <link rel="stylesheet" href="main.css" />
 
-		<script src="jquery.min.js"></script>
-		<script src="d3.v3.min.js" charset="utf-8"></script>
-		<script src="themes.js"></script>
-		<script src="chart.js"></script>
-		<script src="timers.js"></script>
-		<script src="temp.js"></script>
-		<script src="editor.js"></script>
-		<script src="sousvide.js"></script>
-	</head>
-	<body class="bg-primary">
-		<div id="mask">
-			<div id="wait">
-				<h2>Sorry about this</h2>
-				Your sous vide is taking a second to give us the deets. Hold
-				tight.
-			</div>
-		</div>
-		<h1 class="fg-secondary">SV2.1.0</h1>
-		<div id="floater">
-			<div id="display">
-				<div id="temp_container"><span id="temp"></span> &deg;C</div>
-				<div id="target_container">
-					<span class="fg-secondary">target</span>
-					<span id="target"></span> &deg;C
-				</div>
-				<div id="error_container">
-					<span class="fg-secondary">error</span>
-					<span id="abs_err"></span> &deg;C
-				</div>
-			</div>
-			<div id="buttonbar" class="bg-secondary">
-				<a id="button_enable" href="#">Enabled</a>
-				<a id="button_disable" href="#">Disabled</a>
-			</div>
-		</div>
-		<div id="editor_container">
-			<div id="editor" class="bg-secondary">
-				<table>
-				</table>
-				<form id="param_form" method="POST" action="/params">
-					<table>
-						<tr>
-							<td>target</td>
-							<td>
-								<form id="target_form" method="POST" action="/target">
-									<input type="text"
-										id="target_input"
-										name="target"
-										class="bg-secondary">&deg;C
-								</form>
-							</td>
-						</tr>
-						<tr><td></td></tr>
-						<tr>
-							<td>Prop</td>
-							<td class="val">
-								<input type="text" class="bg-secondary" name="p" id="pid_p">
-							</td>
-						</tr>
-						<tr>
-							<td>Int</td>
-							<td class="val">
-								<input type="text" class="bg-secondary" name="i" id="pid_i">
-							</td>
-						</tr>
-						<tr>
-							<td>Deriv</td>
-							<td class="val">
-								<input type="text" class="bg-secondary" name="d" id="pid_d">
-								<input value="save PID" type="submit" style="display:none">
-							</td>
-						</tr>
-						<!--
-						<tr>
-							<td></td>
-							<td><input value="save PID" type="submit"></td>
-						</tr>
-						-->
-					</table>
-				</form>
-			</div>
-			<!-- this enclosing span is to get around strange behavior in Chrome
-			where the background of the <a> isn't dealt with correctly. -->
-			<span class="bg-secondary" style="float:left">
-				<a href="#" id="editor_expand" class="icon-double-angle-right fg-primary"></a>
-			</span>
-		</div>
-		<div id="loader" class="fg-secondary">&deg;</div>
+        <script src="jquery.min.js"></script>
+        <script src="d3.v3.min.js" charset="utf-8"></script>
+        <script src="themes.js"></script>
+        <script src="chart.js"></script>
+        <script src="timers.js"></script>
+        <script src="temp.js"></script>
+        <script src="editor.js"></script>
+        <script src="sousvide.js"></script>
+        <script src="job.js"></script>
+    </head>
+    <body class="bg-primary">
+        <div id="mask">
+            <div id="wait">
+                <h2>Sorry about this</h2>
+                Your sous vide is taking a second to give us the deets. Hold
+                tight.
+            </div>
+        </div>
+        <h1 class="fg-secondary">SV2.1.0</h1>
+        <div id="floater">
+            <div id="display">
+                <div class="invis"></div>
+                <div id="temp_container"><span id="temp"></span> &deg;F</div>
+                <div id="target_container">
+                    <span class="fg-secondary">target</span>
+                    <span id="target"></span> &deg;F
+                </div>
+                <div id="error_container">
+                    <span class="fg-secondary">error</span>
+                    <span id="abs_err"></span> &deg;F
+                </div>
+            </div>
+            <div id="buttonbar" class="bg-secondary">
+                <a id="button_enable" href="#">Turn On</a>
+                <a id="button_disable" href="#">Turn Off</a>
+                <div class="clearfix"></div>
+            </div>
+        </div>
+        <div id="editor_container">
+            <div id="editor" class="bg-secondary">
+                <table>
+                </table>
+                <form id="param_form" method="POST" action="/params">
+                    <table>
+                        <tr>
+                            <td>target</td>
+                            <td>
+                                <form id="target_form" method="POST" action="/target">
+                                    <input type="text"
+                                           id="target_input"
+                                           name="target"
+                                           class="bg-secondary" />&deg;F
+                                </form>
+                            </td>
+                        </tr>
+                        <tr><td></td></tr>
+                        <tr>
+                            <td>Prop</td>
+                            <td class="val">
+                                <input type="text" class="bg-secondary" name="p" id="pid_p">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Int</td>
+                            <td class="val">
+                                <input type="text" class="bg-secondary" name="i" id="pid_i">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Deriv</td>
+                            <td class="val">
+                                <input type="text" class="bg-secondary" name="d" id="pid_d">
+                                <input value="save PID" type="submit" style="display:none">
+                            </td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
+            <!-- this enclosing span is to get around strange behavior in Chrome
+            where the background of the <a> isn't dealt with correctly. -->
+            <span class="bg-secondary" style="float:left">
+                <a href="#" id="editor_expand" class="icon-double-angle-right fg-primary"></a>
+            </span>
+        </div>
+        <div id="loader" class="fg-secondary">&deg;</div>
 
-		<section style="display:none;">
-			<h2>timers</h2>
-			<table id="timers">
-			</table>
-			<form action="/timer" method="POST">
-				<input type="text" name="name" placeholder="New timer">
-				<input type="text" name="h" placeholder="HH" class="time">
-				<input type="text" name="m" placeholder="MM" class="time">
-				<input type="text" name="s" placeholder="SS" class="time">
-				<input type="submit" value="save">
-			</form>
-      <input type="submit" value="enable timer audio" id="enable_audio">
-			<audio id="timernoise" src="/finished.ogg" preload="auto" volume="1"></audio>
-		</section>
-		<section style="display:none;">
-			<h2>status</h2>
-			<table>
-				<tr>
-					<td class="label">
-						Mean error per sample:
-						<span class="subtext">
-							Taken over 32-sample sliding window
-						</span>
-					</td>
-					<td class="val">&plusmn;<span id="acc_err"></span> &deg;C/sample</td>
-				</tr>
-				<tr>
-					<td class="label">
-						Max overshoot:
-						<span class="subtext">
-							Taken over 32-sample sliding window
-						</span>
-					</td>
-					<td class="val"><span id="max_err"></span> &deg;C</td>
-				</tr>
-			</table>
-		</section>
-	</body>
+        <section style="display:none;">
+            <h2>status</h2>
+            <table>
+                <tr>
+                    <td class="label">
+                        Mean error per sample:
+                        <span class="subtext">
+                            Taken over 32-sample sliding window
+                        </span>
+                    </td>
+                    <td class="val">&plusmn;<span id="acc_err"></span> &deg;F/sample</td>
+                </tr>
+                <tr>
+                    <td class="label">
+                        Max overshoot:
+                        <span class="subtext">
+                            Taken over 32-sample sliding window
+                        </span>
+                    </td>
+                    <td class="val"><span id="max_err"></span> &deg;F</td>
+                </tr>
+            </table>
+        </section>
+        <section id="jobs">
+            <div class="invis"></div>
+            <h2>Manage Jobs</h2>
+            
+            <input type="submit" value="enable timer audio" id="enable_audio">
+            <audio id="timernoise" src="/finished.ogg" preload="auto"></audio>
+            
+            <div id="start_jobs">
+                <select id="job_select">
+                    <option value="0">Pick Job to Start</option>
+                </select>
+                <br>
+                <button>Define New Job</button>
+            </div>
+
+            <div id="new_job">
+                <label for="job_name">Name: </label><input id="job_name" name="job_name" value="Name" type="text" /><br>
+                <br>
+                <label for="job_temp">Temp (F&deg;): </label><input id="job_temp" name="job_temp" value="150" type="text" /><br>
+                <br>
+                <label for="job_minutes">Time: </label><input id="job_minutes" name="job_minutes" value="60" type="text" /> minutes<br>
+                <br>
+                <button class="save">Save Job</button>
+                <button class="cancel">Cancel</button>
+            </div>
+
+            <div id="manage_job">
+                <h3>Job Name</h3>
+                <div id="preheat">
+                    <p>Preheat to <span>150</span>&deg;F?</p>
+                    <button class="preheat">Preheat!</button>
+                    <button class="cancel">Cancel</button>
+                    <br/>
+                    <button class="delete">Delete this Job Permanently</button>
+                </div>
+                <div id="preheating">
+                    <p>Preheating to <span>150</span>&deg;F...</p>
+                    <button class="cancel">Cancel Preheat</button>
+                </div>
+                <div id="start_timer">
+                    <p>Preheat Complete! Timer set for <span>60</span> minutes</p>
+                    <button class="start_timer">Start Timer</button>
+                    <button class="cancel">Cancel Preheat</button>
+                </div>
+                <div id="cooking">
+                    <p>Time remaining: <span></span></p>
+                    <label>Auto-shutoff after time up:</label> <input type="checkbox" checked="checked" />
+                    <br>
+                    <button class="cancel">Cancel Job &amp; Heat</button>
+                </div>
+                <div id="cooked">
+                    <p>Job was done <span></span> ago!</p>
+                    <button class="heat_off">Turn off heat</button>
+                    <button class="job_done">Back to Jobs</button>
+                    <button class="restart">Restart Job</button>
+                </div>
+            </div>
+
+        </section>
+    </body>
 </html>

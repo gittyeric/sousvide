@@ -1,5 +1,7 @@
 var ENABLE_TEMP = true;
 
+var tempDispatcher = new EventEmitter();
+
 var tempElem, absErrElem, targetElem, heatingElem, accErrElem
 var enableButton, disableButton, lastEnabled = undefined
 var pInputElem, iInputElem, dInputElem
@@ -78,6 +80,8 @@ function displayData(data) {
 	if (temp != undefined) {
 		pushTemp(temp, data.Heating);
 	}
+
+        tempDispatcher.emit("temp", temp.toFixed(3));
 
 	$(tempElem).text(temp.toFixed(1));
 	$(targetElem).text(target.toFixed(2));

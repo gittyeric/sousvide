@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"sort"
@@ -24,11 +23,19 @@ type Timers []*Timer
 var timers = make(Timers, 0)
 var nextId = int64(0)
 
-func StartTimerUpdateLoop() {
+func StartTimerUpdateLoop(s *SousVide) {
 	for _ = range time.Tick(time.Second) {
 		for _, t := range timers {
 			t.TimeRemaining = t.ExpiresAt.Sub(time.Now())
+                        wasExpired := t.Expired
 			t.Expired = t.TimeRemaining < 0
+
+                        if t.Expired && !wasExpired{
+                            s.Enabled = false
+                            timers = make(Timers, 0)
+                            log.Printf("Job %s completed!", t.Name)
+                            break
+                        }
 		}
 	}
 }
@@ -46,29 +53,23 @@ func AddTimerHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing argument name", http.StatusBadRequest)
 		return
 	}
-	h, err := intData(w, r, "h", 0)
-	if err != nil {
-		return
-	}
 	m, err := intData(w, r, "m", 0)
 	if err != nil {
 		return
 	}
-	s, err := intData(w, r, "s", 0)
-	if err != nil {
+        id, idErr := intData(w, r, "id", 0)
+	if idErr != nil {
 		return
 	}
-	if (h == 0 && m == 0 && s == 0) || (h < 0 || m < 0 || s < 0) {
+	if m == 0 || m < 0 {
 		http.Error(w, "must set timer for time in the future", http.StatusBadRequest)
 		return
 	}
 
 	t := &Timer{
-		Id:   nextId,
+		Id:   id,
 		Name: name,
-		SetTime: time.Duration(h)*time.Hour +
-			time.Duration(m)*time.Minute +
-			time.Duration(s)*time.Second,
+		SetTime: time.Duration(m)*time.Minute,
 	}
 	t.ExpiresAt = time.Now().Add(t.SetTime)
 
@@ -84,7 +85,7 @@ func GetTimersHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "application/json")
 	b, err := json.Marshal(timers)
 	if err != nil {
-		log.Panicf("could not marshal timer data to json: %v", err)
+		log.Panicf("could not marshal timer temps to json: %v", err)
 	}
 	w.Write(b)
 	for _, t := range timers {
@@ -93,7 +94,7 @@ func GetTimersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteTimerHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := intData(w, r, "id", -1)
+	/*id, err := intData(w, r, "id", -1)
 	if err != nil {
 		return
 	} else if id == -1 {
@@ -114,6 +115,7 @@ func DeleteTimerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	timers[idx] = timers[len(timers)-1]
 	timers = timers[:len(timers)-1]
-	sort.Sort(timers)
+	sort.Sort(timers)*/
+        timers = make(Timers, 0)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
