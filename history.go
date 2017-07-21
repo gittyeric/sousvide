@@ -11,6 +11,7 @@ import (
 	"bufio"
 	"github.com/antigloss/go/logger"
 	"encoding/json"
+	"errors"
 )
 
 const RESULTS_PER_PAGE = 60 * 60 //Return 1 hour of results per page
@@ -26,7 +27,7 @@ type HistoryEntry struct{
 }
 
 func (he *HistoryEntry) toString() string{
-	timeStr := strconv.FormatInt(he.Time, 64)
+	timeStr := strconv.FormatInt(he.Time, 36)
 	tempStr := strconv.FormatFloat(he.Temp, 'f', -1, 64)
 	targetStr := strconv.FormatFloat(he.Target, 'f', -1, 64)
 	isHeating := "0"
@@ -36,8 +37,12 @@ func (he *HistoryEntry) toString() string{
 	return he.JobName + "~" + timeStr + "~" + tempStr + "~" + targetStr + "~" + isHeating
 }
 
-func fromString(hEntryStr string) *HistoryEntry{
+func fromString(hEntryStr string) (*HistoryEntry, error){
 	subs := strings.Split(hEntryStr, "~")
+
+	if len(subs) < 4 {
+		return nil, errors.New("Bad input text")
+	}
 
 	jobName := ""
 	time := subs[0]
@@ -45,7 +50,7 @@ func fromString(hEntryStr string) *HistoryEntry{
 	target := subs[2]
 	isHeating := subs[3]
 
-	if(len(subs) >= 5){
+	if len(subs) >= 5 {
 		jobName = subs[0]
 		time = subs[1]
 		temp = subs[2]
@@ -53,7 +58,7 @@ func fromString(hEntryStr string) *HistoryEntry{
 		isHeating = subs[4]
 	}
 
-	timeInt, _ := strconv.ParseInt(time, 10, 64)
+	timeInt, _ := strconv.ParseInt(time, 36, 64)
 	tempFloat, _ := strconv.ParseFloat(temp, 64)
 	targetFloat, _ := strconv.ParseFloat(target, 64)
 	heatingBool := isHeating == "1"
@@ -64,7 +69,7 @@ func fromString(hEntryStr string) *HistoryEntry{
 		Temp: tempFloat,
 		Target: targetFloat,
 		IsHeating: heatingBool,
-	}
+	}, nil
 }
 
 type ByModTime []os.FileInfo
@@ -78,7 +83,7 @@ func (fis ByModTime) Swap(i, j int) {
 }
 
 func (fis ByModTime) Less(i, j int) bool {
-	return fis[i].ModTime().Before(fis[j].ModTime())
+	return fis[i].ModTime().After(fis[j].ModTime())
 }
 
 type HistoryResponse struct {
@@ -90,9 +95,10 @@ type HistoryResponse struct {
 func dumpHistoryJson(w http.ResponseWriter, page int, history []*HistoryEntry) {
 	w.Header().Set("Content-type", "application/json")
 
+	log.Println("history len: " + strconv.Itoa(len(history)))
 	historyResponse := &HistoryResponse{
 		History: history,
-		HasPrev: len(history) == RESULTS_PER_PAGE,
+		HasPrev: len(history) >= RESULTS_PER_PAGE,
 		Page: page,
 	}
 
@@ -101,6 +107,11 @@ func dumpHistoryJson(w http.ResponseWriter, page int, history []*HistoryEntry) {
 		log.Panicf("could not marshal historical temps to json: %v", err)
 	}
 	w.Write(b)
+}
+
+func SetJobName(sv *SousVide, r *http.Request){
+	jobName := r.FormValue("name")
+	sv.JobName = jobName
 }
 
 func GetHistory(w http.ResponseWriter, r *http.Request){
@@ -120,7 +131,6 @@ func LogHistory(sv *SousVide){
 		Time : time.Now().UnixNano() / int64(time.Millisecond),
 		Temp: float64(sv.Temp),
 	}
-
 	logger.Info(entry.toString())
 }
 
@@ -129,47 +139,83 @@ func retrieveHistory(page int) []*HistoryEntry{
 	lastEntry := RESULTS_PER_PAGE * (page+1)
 	firstEntry := lastEntry - RESULTS_PER_PAGE
 
-	entries := make([]*HistoryEntry, 0, RESULTS_PER_PAGE)
+	entries := make([][]*HistoryEntry, 0, 100)
+	total := 0
 
 	f, _ := os.Open("/var/log/sousvide/therm")
 	fis, _ := f.Readdir(-1)
-	f.Close()
+	defer f.Close()
 	sort.Sort(ByModTime(fis))
 
+	skippedSimLink := false //First file is sym link to real file
 	for _, fi := range fis {
-		if curEntry < lastEntry {
+		if curEntry > lastEntry {
 			break
 		}
 
-		log.Output(2, "Inspecting history file: " + fi.Name())
+		if !skippedSimLink {
+			skippedSimLink = true
+			continue
+		}
 
-		if file, err := os.Open(fi.Name()); err == nil {
+		if file, err := os.Open("/var/log/sousvide/therm/" + fi.Name()); err == nil {
 
 			// make sure it gets closed
 			defer file.Close()
 
+			log.Println("Opened file: " + fi.Name())
+
+			fileEntries := make([]*HistoryEntry, 0, RESULTS_PER_PAGE)
 			// create a new scanner and read the file line by line
 			scanner := bufio.NewScanner(file)
-			for scanner.Scan() && curEntry < lastEntry {
+			for scanner.Scan() && curEntry <= lastEntry {
 				line := scanner.Text()
 
-				if(curEntry >= firstEntry){
-					hEntry := fromString(line)
-					entries = append(entries, hEntry)
+				if curEntry >= firstEntry && curEntry <= lastEntry {
+					timeEndPos := strings.Index(line, "] ") + 2
+
+					if timeEndPos < 1 {
+						log.Println("History entry format not found: " + line)
+						curEntry -= 1
+					} else{
+						historyStr := line[timeEndPos:]
+						hEntry, err := fromString(historyStr)
+						if err != nil{
+							log.Println("Got bad log line: " + line)
+							curEntry -= 1
+						} else{
+							fileEntries = append(fileEntries, hEntry)
+							total += 1
+						}
+					}
 				}
 
 				curEntry += 1
+			}
+
+			if len(fileEntries) > 0 {
+				log.Println("Added " + strconv.Itoa(len(fileEntries)))
+				entries = append(entries, fileEntries)
 			}
 
 			// check for errors
 			if err = scanner.Err(); err != nil {
 				log.Fatal(err)
 			}
-
 		} else {
 			log.Fatal(err)
 		}
 	}
 
-	return entries
+	flatEntries := make([]*HistoryEntry, total)
+	fileBasePos := total
+	for curE := 0; curE < len(entries); curE++ {
+		e := entries[curE]
+		fileBasePos -= len(e)
+		for j := 0; j < len(e); j++ {
+			flatEntries[fileBasePos + j] = e[j]
+		}
+	}
+
+	return flatEntries
 }

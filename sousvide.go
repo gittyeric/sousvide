@@ -84,8 +84,11 @@ func New() *SousVide {
 	logger.Init("/var/log/sousvide/therm", // specify the directory to save the logfiles
 		365, // maximum logfiles allowed under the specified log directory
 		2, // number of logfiles to delete when number of logfiles exceeds the configured limit
-		5, // maximum size of a logfile in MB
+		50, // maximum size of a logfile in MB
 		false) // whether logs with Trace level are written down
+	logger.SetLogFilenameLineNum(false)
+	logger.SetLogFunctionName(false)
+	logger.SetLogFunctionName(false)
 	s.History = make([]HistorySample, 0, HistoryLength)
 	return s
 }

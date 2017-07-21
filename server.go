@@ -87,7 +87,12 @@ func (s *SousVide) StartServer() {
 		s.checkpoint()
 		s.SavePid()
 		log.Printf("new pid parameters p=%f i=%f d=%f", p, i, d);
-		resp.Write([]byte("success"));
+		resp.Write([]byte("success"))
+	})
+
+	http.HandleFunc("/job", func(resp http.ResponseWriter, req *http.Request) {
+		SetJobName(s, req)
+		resp.Write([]byte("success"))
 	})
 
 	http.HandleFunc("/enable", func(w http.ResponseWriter, r *http.Request) {

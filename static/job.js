@@ -57,6 +57,11 @@ function newJobs(){
             temp : Number($("#job_temp").val()),
             minutes : Number($("#job_minutes").val())
         };
+
+        if(job.name.indexOf("~") >= 0){
+            alert("Jobs cannot contain '~'");
+            return false;
+        }
         
         //TODO
         /*$.ajax("/add_job", {
@@ -72,6 +77,8 @@ function newJobs(){
         
         jobs[job.localId+""] = job;
         updateJobsSelect();
+
+        return true;
     }
     
     function updateJobsSelect(){
@@ -101,7 +108,7 @@ function newJobs(){
         $("#preheat").css("height", "0");
         $("#preheating").css("height", "auto");
         $("#preheating span").text(job.temp);
-        
+
         listenForTemp(job.temp);
     }
     
@@ -228,6 +235,15 @@ function newJobs(){
             
             $("#preheat span").text(job.temp + "");
             $("#manage_job h3").text(job.name);
+
+            $.ajax({
+                url: "/job",
+                type: 'post',
+                dataType: "text",
+                data: {name : job.name}
+            }).fail(function(){
+                alert("Failed to set job name in logs! Check connection and ry reselecting this Job.");
+            });
         }
     });
     $("#start_jobs button").click(function(){
@@ -240,8 +256,10 @@ function newJobs(){
     
     //New Jobs
     $("#new_job button.save").click(function(){
-        saveNewJob();
-        resetJobsUI();
+        if(saveNewJob()){
+            resetJobsUI();
+        }
+
         return false;
     });
     
