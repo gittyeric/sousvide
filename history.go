@@ -12,6 +12,10 @@ import (
 	"github.com/antigloss/go/logger"
 	"encoding/json"
 	"errors"
+	"bytes"
+	"compress/gzip"
+	"io/ioutil"
+	"encoding/base64"
 )
 
 const RESULTS_PER_PAGE = 60 * 60 //Return 1 hour of results per page
@@ -24,6 +28,29 @@ type HistoryEntry struct{
 	Target float64
 	IsHeating bool
 
+}
+
+func compressStr(str string) string{
+	var b bytes.Buffer
+	gz := gzip.NewWriter(&b)
+	if _, err := gz.Write([]byte(str)); err != nil {
+		panic(err)
+	}
+	if err := gz.Flush(); err != nil {
+		panic(err)
+	}
+	if err := gz.Close(); err != nil {
+		panic(err)
+	}
+	return base64.StdEncoding.EncodeToString(b.Bytes())
+}
+
+func decompressStr(str string) string{
+	data, _ := base64.StdEncoding.DecodeString(str)
+	rdata := bytes.NewReader(data)
+	r,_ := gzip.NewReader(rdata)
+	s, _ := ioutil.ReadAll(r)
+	return string(s)
 }
 
 func (he *HistoryEntry) toString() string{
@@ -130,6 +157,8 @@ func LogHistory(sv *SousVide){
 		JobName : sv.JobName,
 		Time : time.Now().UnixNano() / int64(time.Millisecond),
 		Temp: float64(sv.Temp),
+		Target: float64(sv.Target),
+		IsHeating: sv.Heating,
 	}
 	logger.Info(entry.toString())
 }
@@ -147,14 +176,13 @@ func retrieveHistory(page int) []*HistoryEntry{
 	defer f.Close()
 	sort.Sort(ByModTime(fis))
 
-	skippedSimLink := false //First file is sym link to real file
 	for _, fi := range fis {
 		if curEntry > lastEntry {
 			break
 		}
 
-		if !skippedSimLink {
-			skippedSimLink = true
+		if fi.Name() == "sousvide.root.INFO" { //First file is sym link to real file
+			log.Println("Skipping symlinked log")
 			continue
 		}
 
