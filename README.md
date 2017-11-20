@@ -1,5 +1,7 @@
-sousvide PID control and web UI
+# Sousvide PID control and web UI
 ==
+
+My port of http://haldean.org/sousvide .  Converts his units to Fahrenheit and adds a programmable menu.
 
 ![](http://i.imgur.com/VMDkMoT.png)
 
